@@ -36,16 +36,9 @@ using namespace std;
 
 
 
+
 struct Message {
-    int8_t type;
-    int8_t id;
-    char content[BUFF-BUFFID];
-
-};
-
-struct Send_args {
-    string Batched[1000];
-    int start;
+    string value[1000];
 };
 
 SOCKET SendSock = INVALID_SOCKET;
@@ -54,15 +47,15 @@ SOCKET RecvSock = INVALID_SOCKET;
 struct sockaddr_in SendSockAddr;
 struct sockaddr_in RecvSockAddr;
 
-char RecvBufferedMsg[BUFF]; 
+
 char SendMsgBuffered[BUFF - 4];
-string Batched[1000];
+
 
 //COMPILE COMMAND 
 //g++ -o prog.exe RPserver.cpp -lws2_32 -pthread
 
 //INITIALIZE WINSOCK LIBRARY
-int InitializeWinSock(){
+int InitializeWinSock() {
 
 
     WSADATA wsaData;
@@ -78,16 +71,16 @@ int InitializeWinSock(){
 }
 
 //INITIALIZE SOCKET 
-int InitializeSocket(){
+int InitializeSocket() {
 
 
     SendSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     RecvSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
-    if (SendSock != INVALID_SOCKET && RecvSock != INVALID_SOCKET){
+    if (SendSock != INVALID_SOCKET && RecvSock != INVALID_SOCKET) {
         printf("//  Sockets succesfully initialized\n");
         return 0;
-        
+
     }
 
     printf("//  Sockets initialization failed %d\n", WSAGetLastError());
@@ -96,20 +89,20 @@ int InitializeSocket(){
 }
 
 //BUILD SOCKET
-int BuildSocket(){
+int BuildSocket() {
 
 
     SendSockAddr.sin_family = AF_INET;
-    SendSockAddr.sin_port   = htons(PORT+1);
+    SendSockAddr.sin_port = htons(PORT + 1);
 
     RecvSockAddr.sin_family = AF_INET;
-    RecvSockAddr.sin_port   = htons(PORT);
+    RecvSockAddr.sin_port = htons(PORT);
 
 
     InetPton(AF_INET, _T(HOST), &RecvSockAddr.sin_addr.s_addr);
     InetPton(AF_INET, _T(HOST), &SendSockAddr.sin_addr.s_addr);
 
-    if ( bind(RecvSock, (SOCKADDR *) & RecvSockAddr, sizeof (RecvSockAddr))) {
+    if (bind(RecvSock, (SOCKADDR*)&RecvSockAddr, sizeof(RecvSockAddr))) {
         printf("//  bind failed with error %d\n", WSAGetLastError());
         return 1;
     }
@@ -121,12 +114,12 @@ int BuildSocket(){
 
 //RECIVING 
 string ReciveFunc() {
-    
-    
-    int ServerAddrSize  = sizeof(RecvSockAddr);
+    char RecvBufferedMsg[BUFF];
+
+    int ServerAddrSize = sizeof(RecvSockAddr);
 
 
-    int recived = recvfrom(RecvSock, RecvBufferedMsg, 1024, 0 , (SOCKADDR *)& RecvSockAddr, &ServerAddrSize);
+    int recived = recvfrom(RecvSock, RecvBufferedMsg, 1024, 0, (SOCKADDR*)&RecvSockAddr, &ServerAddrSize);
 
     if (recived == SOCKET_ERROR) {
         printf("// recvfrom failed with error %d\n", WSAGetLastError());
@@ -137,26 +130,26 @@ string ReciveFunc() {
     RecvBufferedMsg[recived] = '\0';
 
     string x;
-    
+
     for (int i = 0; i < recived; i++) {
 
         x.push_back(RecvBufferedMsg[i]);
     }
 
-    //printf("//  succesfully recived :\n////  %s\n", RecvBufferedMsg);
+
     return x;
 
 }
 
 //SEND
-int SendFunc(std::string x){
+int SendFunc(std::string x) {
 
-    for (int i =0; i<x.length(); i++) {
+    for (int i = 0; i < x.length(); i++) {
         SendMsgBuffered[i] = x[i];
-        }
+    }
 
     int MsgLen = (int)(x.length());
-    int result = sendto(SendSock, SendMsgBuffered, MsgLen, 0 , (SOCKADDR *) & SendSockAddr, sizeof(SendSockAddr));
+    int result = sendto(SendSock, SendMsgBuffered, MsgLen, 0, (SOCKADDR*)&SendSockAddr, sizeof(SendSockAddr));
 
     if (result == SOCKET_ERROR) {
         printf("// Sending back response got an error: %d\n", WSAGetLastError());
@@ -167,16 +160,16 @@ int SendFunc(std::string x){
     return 0;
 }
 
-void Recive(){
+Message ReciveWithoutInit() {
 
     int Recived = 0;
-    
-    string Ending = ENDING;
-    string Message;
 
-    string FinMessage[1000];
+    string Ending = ENDING;
+    string msg;
+
+    Message FinMessage;
     for (int i = 0; i < 1000; i++) {
-        FinMessage[i] = "0";
+        FinMessage.value[i] = "0";
     }
 
     int ID;
@@ -184,57 +177,58 @@ void Recive(){
 
     while (1 == 1) {
         Recived = 0;
-        Message = ReciveFunc();
+        msg = ReciveFunc();
 
-        //cout << Message << endl;
-        if (Message.substr(1, 3) == "000") {
+
+        if (msg.substr(1, 3) == "000") {
             ID = 0;
         }
         else {
-            std::stringstream str(Message.substr(1, 3));
+            std::stringstream str(msg.substr(0, 3));
             str >> ID;
 
         }
 
-        //cout << Message.substr(1, 3) << endl;
-        SendFunc(Message.substr(1, 3));
 
-        FinMessage[ID] = Message.substr(3, Message.size());
+        SendFunc(msg.substr(0, 3));
 
-        if (Message.substr(Message.size() - Ending.size(), Message.size()) == Ending) {
+        FinMessage.value[ID] = msg.substr(2, msg.size());
+
+        if (msg.substr(msg.size() - Ending.size(), msg.size()) == Ending) {
 
             cout << "TO JEST JUZ KONIEC" << endl;
             LastID = ID;
 
-            
+
         }
 
-        
+
         if (LastID != -1) {
             for (int i = 0; i <= LastID; i++) {
-                //cout << Batched[i] << endl;
-                if (FinMessage[i] != "0")
+
+                if (FinMessage.value[i] != "0")
                     Recived++;
             }
         }
 
-        if (Recived == LastID+1) {
+        if (Recived == LastID + 1) {
             cout << "END" << endl;
             break;
         }
 
 
     }
- 
-    
+
+    return FinMessage;
+
 }
 
-int Initialize(){
+int Initialize() {
     int PreaviousID;
     int ID = -1;
 
 
-    if (WIN){    
+    if (WIN) {
         InitializeWinSock();
     }
 
@@ -244,4 +238,15 @@ int Initialize(){
 
     return 0;
 
+}
+
+string Recive() {
+    Initialize();
+    string ans;
+    Message X = ReciveWithoutInit();
+    for (int i = 0; i < 1000; i++) {
+        ans += X.value[i];
+    }
+
+    return ans;
 }
