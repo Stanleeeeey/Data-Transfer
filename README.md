@@ -14,6 +14,6 @@ then simply in your reciving code use `Recive()` whisch returns string with mess
 <br><br>
 ,and `Send()` in the Sending part of your code (requiers a message of type string)
 <br><br>
-There are also two examples of using those functions [one for a Recive()](https://github.com/mastercode5/Data-Transfer/blob/main/Client/clientmain.cpp) and [example of using Send()](https://github.com/mastercode5/Data-Transfer/blob/main/Server/ExampleCode.cpp)
+There are also two examples of using those functions [one for a Recive()](https://github.com/mastercode5/Data-Transfer/blob/main/Client/ExampleClient.cpp) and [example of using Send()](https://github.com/mastercode5/Data-Transfer/blob/main/Server/ExampleCode.cpp)
 
 Hope this code will be useful.
