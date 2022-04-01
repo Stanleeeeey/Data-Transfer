@@ -252,7 +252,7 @@ void SendWithoutChecking(Send_args args) {
 }
 
 //Recive Recives messages and makes sure taht every message is delivered
-int Recive(Send_args args) {
+int ReciveSendingSide(Send_args args) {
 
     int NumElem;
     int Failed;
@@ -346,7 +346,7 @@ int Send(string msg) {
     std::thread SendingThread(SendWithoutChecking, args);
     SendingThread.join();
 
-    std::thread ReciveThread(Recive, args);
+    std::thread ReciveThread(ReciveSendingSide, args);
     ReciveThread.join();
 
     CloseSocket();
