@@ -234,7 +234,7 @@ void SendWithoutChecking(Send_args args) {
 
 
     for (int i = 0; i < 1000; i++) {
-        int lost = rand() % 100 + 1;
+
 
         if (args.Batched[i] == "") {
             break;
@@ -276,7 +276,7 @@ int Recive(Send_args args) {
     while (1 == 1) {
         Failed = 0;
         ID = ReciveFunc();
-        cout << ID << endl;
+
 
 
         Recived.Batched[ID] = "0";
@@ -349,7 +349,7 @@ int Send(string msg) {
     std::thread ReciveThread(Recive, args);
     ReciveThread.join();
 
-
+    CloseSocket();
 
     return 0;
 
