@@ -9,7 +9,7 @@ firsrt download [Send.hpp](https://github.com/mastercode5/Data-Transfer/blob/mai
 ## Send() function
 file : [Send.hpp](https://github.com/mastercode5/Data-Transfer/blob/main/Server/Send.hpp)
 
-Syntax : Send(string msg, string host, int port, int timeout)
+Syntax : ```cpp Send(string msg, string host, int port, int timeout)```
 
 Example of use : [here](https://github.com/mastercode5/Data-Transfer/blob/main/Server/ExampleCode.cpp)
 
@@ -24,7 +24,7 @@ Example of use : [here](https://github.com/mastercode5/Data-Transfer/blob/main/S
 ## Recive() function 
 from file : [Client.hpp](https://github.com/mastercode5/Data-Transfer/blob/main/Client/Recive.hpp)
 
-Syntax : Recive(string host, int port)
+Syntax : ```cpp Recive(string host, int port)```
 
 Example of use : [here](https://github.com/mastercode5/Data-Transfer/blob/main/Client/ExampleClient.cpp)
 
