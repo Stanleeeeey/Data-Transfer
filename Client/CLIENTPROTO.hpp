@@ -88,18 +88,19 @@ int InitializeSocket() {
 }
 
 //BUILD SOCKET
-int BuildSocket() {
+int BuildSocket(string host, int port) {
 
+    wstring stemp = std::wstring(host.begin(), host.end());
+    LPCWSTR sw = stemp.c_str();
 
     SendSockAddr.sin_family = AF_INET;
-    SendSockAddr.sin_port = htons(PORT + 1);
+    SendSockAddr.sin_port = htons(port + 1);
 
     RecvSockAddr.sin_family = AF_INET;
-    RecvSockAddr.sin_port = htons(PORT);
+    RecvSockAddr.sin_port = htons(port);
 
-
-    InetPton(AF_INET, _T(HOST), &RecvSockAddr.sin_addr.s_addr);
-    InetPton(AF_INET, _T(HOST), &SendSockAddr.sin_addr.s_addr);
+    InetPton(AF_INET, sw, &RecvSockAddr.sin_addr.s_addr);
+    InetPton(AF_INET, sw, &SendSockAddr.sin_addr.s_addr);
 
     if (bind(RecvSock, (SOCKADDR*)&RecvSockAddr, sizeof(RecvSockAddr))) {
         printf("//  bind failed with error %d\n", WSAGetLastError());
@@ -110,6 +111,7 @@ int BuildSocket() {
     return 0;
 
 }
+
 
 //RECIVING 
 string ReciveFunc() {
@@ -195,7 +197,7 @@ Message ReciveWithoutInit() {
 
         if (msg.size() < FinMessage.value[0].size()) {
 
-            cout << "TO JEST JUZ KONIEC" << endl;
+            cout << "RECIVED LAST MESSAGE" << endl;
             LastID = ID;
 
 
@@ -222,8 +224,8 @@ Message ReciveWithoutInit() {
 
 }
 
-int Initialize() {
-    int PreaviousID;
+int Initialize(string host, int port) {
+
     int ID = -1;
 
 
@@ -232,15 +234,15 @@ int Initialize() {
     }
 
     InitializeSocket();
-    BuildSocket();
+    BuildSocket(host, port);
 
 
     return 0;
 
 }
 
-string Recive() {
-    Initialize();
+string Recive(string host, int port) {
+    Initialize(host, port);
     string ans;
     Message X = ReciveWithoutInit();
     for (int i = 0; i < 1000; i++) {

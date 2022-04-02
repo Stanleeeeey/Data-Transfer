@@ -1,5 +1,7 @@
 #include <iostream>
 #include "SERVERPROTO.hpp"
+#include <thread>
+#include <chrono>
 
 
 
@@ -14,7 +16,7 @@ int main() {
     }
 
 
-    Send(x);
+    Send(x, "127.0.0.1", 1234);
 
     cout << "Sended " << endl;
 

@@ -97,17 +97,19 @@ int CloseSocket() {
     return 1;
 }
 //BUILD SOCKET
-int BuildSocket() {
+int BuildSocket(string host, int port) {
 
+    wstring stemp = std::wstring(host.begin(), host.end());
+    LPCWSTR sw = stemp.c_str();
 
     SendSockAddr.sin_family = AF_INET;
-    SendSockAddr.sin_port = htons(PORT);
+    SendSockAddr.sin_port = htons(port);
 
     RecvSockAddr.sin_family = AF_INET;
-    RecvSockAddr.sin_port = htons(PORT + 1);
+    RecvSockAddr.sin_port = htons(port + 1);
 
-    InetPton(AF_INET, _T(HOST), &RecvSockAddr.sin_addr.s_addr);
-    InetPton(AF_INET, _T(HOST), &SendSockAddr.sin_addr.s_addr);
+    InetPton(AF_INET, sw, &RecvSockAddr.sin_addr.s_addr);
+    InetPton(AF_INET, sw, &SendSockAddr.sin_addr.s_addr);
 
     if (bind(RecvSock, (SOCKADDR*)&RecvSockAddr, sizeof(RecvSockAddr))) {
         printf("//  bind failed with error %d\n", WSAGetLastError());
@@ -304,7 +306,7 @@ int ReciveSendingSide(Send_args args) {
 
 
 
-int Initialize() {
+int Initialize(string host, int port) {
 
     int ID = -1;
 
@@ -314,17 +316,17 @@ int Initialize() {
     }
 
     InitializeSocket();
-    BuildSocket();
+    BuildSocket(host, port);
 
 
     return 0;
 
 }
 
-int Send(string msg) {
+int Send(string msg, string host, int port) {
 
     cout << "//Starting Winsock Initialize and Socket Build" << endl;
-    Initialize();
+    Initialize(host, port);
 
 
     Send_args Batched = IntoBatches(msg);
