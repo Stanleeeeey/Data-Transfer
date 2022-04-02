@@ -44,6 +44,12 @@ struct Send_args {
 
 };
 
+struct Timer_args {
+    Send_args message;
+    int Time;
+
+};
+
 
 SOCKET SendSock = INVALID_SOCKET;
 SOCKET RecvSock = INVALID_SOCKET;
@@ -53,6 +59,8 @@ struct sockaddr_in RecvSockAddr;
 
 char SendMsgBuffered[BUFF + BUFFID + 1];
 char RecvBufferedMsg[BUFFID + 1];
+
+atomic<bool> ThreadRunFlag = false;
 
 
 //INITIALIZE WINSOCK LIBRARY
@@ -128,6 +136,10 @@ int ReciveFunc() {
 
 
     int ServerAddrSize = sizeof(RecvSockAddr);
+
+
+
+    int length = sizeof(ServerAddrSize);
 
 
     int recived = recvfrom(RecvSock, RecvBufferedMsg, BUFFID, 0, (SOCKADDR*)&RecvSockAddr, &ServerAddrSize);
@@ -266,13 +278,14 @@ int ReciveSendingSide(Send_args args) {
 
 
     bool LastID = false;
-    int ID;
+    int ID = -1;
 
     printf("////    Recive Thread Succesfully Started\n");
 
     Send_args Recived;
 
     while (1 == 1) {
+
         Failed = 0;
         ID = ReciveFunc();
 
@@ -294,12 +307,16 @@ int ReciveSendingSide(Send_args args) {
         }
 
         if (Failed == 0 and LastID) {
-
+            ThreadRunFlag = true;
             cout << "END" << endl;
 
             return 0;
         }
+
+        ThreadRunFlag = false;
+
     }
+
 
     return 1;
 }
@@ -323,7 +340,24 @@ int Initialize(string host, int port) {
 
 }
 
-int Send(string msg, string host, int port) {
+int Timer(Timer_args args) {
+
+    while (ThreadRunFlag != 0) {
+
+        std::chrono::milliseconds timespan(args.Time);
+
+        std::this_thread::sleep_for(timespan);
+
+        cout << "timeout resending" << endl;
+        SendWithoutChecking(args.message);
+    }
+
+    return 0;
+
+
+}
+
+int Send(string msg, string host, int port, int timeout) {
 
     cout << "//Starting Winsock Initialize and Socket Build" << endl;
     Initialize(host, port);
@@ -342,14 +376,23 @@ int Send(string msg, string host, int port) {
     }
 
 
+    vector<std::thread> threads;
 
-    std::thread SendingThread(SendWithoutChecking, args);
-    SendingThread.join();
+    Timer_args data;
+    data.message = args;
+    data.Time = 1000;
 
-    std::thread ReciveThread(ReciveSendingSide, args);
-    ReciveThread.join();
+    std::thread(SendWithoutChecking, args).join();
+    threads.push_back(std::thread(ReciveSendingSide, args));
+    threads.push_back(std::thread(Timer, data));
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
 
     CloseSocket();
+
+
 
     return 0;
 

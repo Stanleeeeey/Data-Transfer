@@ -16,8 +16,9 @@ int main() {
     }
 
 
-    Send(x, "127.0.0.1", 1234);
+    int y = Send(x, "127.0.0.1", 1234, 10000);
 
+    
     cout << "Sended " << endl;
 
 
