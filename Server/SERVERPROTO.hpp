@@ -36,7 +36,7 @@ using namespace std::chrono;
 #define HOST "127.0.0.1"
 #define BUFF 10
 #define BUFFID 3
-#define ENDING "<!--END"
+
 
 
 struct Send_args {
@@ -176,22 +176,19 @@ int SendFunc(std::string x) {
 //CONVERT TO BATCHES 
 Send_args IntoBatches(string message) {
 
-    string Ending = ENDING;
-    message = message + Ending;
+
+    message = message;
     string part;
 
     int IdCount = BUFFID;
     int LocalBUFF = BUFF;
     int length = ceil((message.size()) * 1.0 / (LocalBUFF - 4));
 
-
-    if (LocalBUFF < Ending.size()) {
-        LocalBUFF = Ending.size();
-    }
+    cout << message << endl;
 
     Send_args ans;
 
-    while (length > 999) {
+    while (length > 999 or length % LocalBUFF == 0) {
         cout << "Increasing Buff Size ACTUAL BUFF SIZE:" << LocalBUFF + 1 << endl;
 
         LocalBUFF = LocalBUFF + 1;
@@ -335,6 +332,7 @@ int Send(string msg) {
     struct Send_args args;
 
     for (int i = 0; i < 1000; i++) {
+        cout << Batched.Batched[i] << endl;
         if (Batched.Batched[i] == "") {
             break;
         }

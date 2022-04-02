@@ -28,7 +28,6 @@
 using namespace std;
 
 // Zmienne globalne
-#define ENDING "<!--END"
 #define PORT 6666
 #define HOST "127.0.0.1"
 #define BUFF 1024
@@ -164,12 +163,12 @@ Message ReciveWithoutInit() {
 
     int Recived = 0;
 
-    string Ending = ENDING;
+
     string msg;
 
     Message FinMessage;
     for (int i = 0; i < 1000; i++) {
-        FinMessage.value[i] = "0";
+        FinMessage.value[i] = "";
     }
 
     int ID;
@@ -192,9 +191,9 @@ Message ReciveWithoutInit() {
 
         SendFunc(msg.substr(0, 3));
 
-        FinMessage.value[ID] = msg.substr(2, msg.size());
+        FinMessage.value[ID] = msg.substr(3, msg.size());
 
-        if (msg.substr(msg.size() - Ending.size(), msg.size()) == Ending) {
+        if (msg.size() < FinMessage.value[0].size()) {
 
             cout << "TO JEST JUZ KONIEC" << endl;
             LastID = ID;
@@ -206,7 +205,7 @@ Message ReciveWithoutInit() {
         if (LastID != -1) {
             for (int i = 0; i <= LastID; i++) {
 
-                if (FinMessage.value[i] != "0")
+                if (FinMessage.value[i] != "")
                     Recived++;
             }
         }
@@ -245,8 +244,12 @@ string Recive() {
     string ans;
     Message X = ReciveWithoutInit();
     for (int i = 0; i < 1000; i++) {
-        ans += X.value[i];
+        if (X.value[i] != "0") {
+            ans += X.value[i];
+        }
     }
+
+
 
     return ans;
 }
