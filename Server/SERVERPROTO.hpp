@@ -184,7 +184,7 @@ Send_args IntoBatches(string message) {
     int LocalBUFF = BUFF;
     int length = ceil((message.size()) * 1.0 / (LocalBUFF - 4));
 
-    cout << message << endl;
+
 
     Send_args ans;
 
@@ -332,7 +332,7 @@ int Send(string msg) {
     struct Send_args args;
 
     for (int i = 0; i < 1000; i++) {
-        cout << Batched.Batched[i] << endl;
+
         if (Batched.Batched[i] == "") {
             break;
         }
