@@ -4,6 +4,8 @@ Simple Headerfile library for sending string message using winsock.
 
 # HOW TO USE IT
 
+REQUIRE WINSOCK
+
 first download [Send.hpp](https://github.com/mastercode5/Data-Transfer/blob/main/Server/Send.hpp) (used for sending messages) and [Recive.hpp](https://github.com/mastercode5/Data-Transfer/blob/main/Client/Recive.hpp) (used for reciving). Move them to the folder with your code, then `#include` them (`#include "Recive.hpp"` and `#include "Send.hpp"`). Use Send() and Recive() functions.
 
 ## Send() function
