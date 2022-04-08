@@ -4,7 +4,7 @@ Simple Headerfile library for sending string message using winsock.
 
 # HOW TO USE IT
 
-Warning!! the easiest way to work with the library is to use visual studio compiler
+Warning!! the easiest way to work with the library is to use visual studio compiler, the mingw version is coming soon (Send.hpp is already here, but timeout not supporte (still requires argument for it))
 
 ## Installation and configuration
 first download [Send.hpp](https://github.com/mastercode5/Data-Transfer/blob/main/Server/Send.hpp) (used for sending messages) and [Recive.hpp](https://github.com/mastercode5/Data-Transfer/blob/main/Client/Recive.hpp) (used for reciving). Move them to the folder with your code, then `#include` them (`#include "Recive.hpp"` and `#include "Send.hpp"`). Use Send() and Recive() functions. 
