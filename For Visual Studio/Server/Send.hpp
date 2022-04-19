@@ -5,6 +5,7 @@
 #   include <windows.h>
 #   pragma comment(lib, "Ws2_32.lib")
 
+
 #   define WIN TRUE
 
 
@@ -22,10 +23,11 @@
 #include <list>
 #include <sstream>
 #include <iomanip>
-#include <thread>
+#include "thread"
 #include <tchar.h>
 #include <chrono>
 #include <atomic>
+
 
 
 using namespace std;
@@ -60,7 +62,7 @@ struct sockaddr_in RecvSockAddr;
 char SendMsgBuffered[BUFF + BUFFID + 1];
 char RecvBufferedMsg[BUFFID + 1];
 
-atomic<bool> ThreadRunFlag = false;
+atomic<bool> ThreadRunFlag(false);
 
 
 //INITIALIZE WINSOCK LIBRARY
@@ -313,7 +315,7 @@ int ReciveSendingSide(Send_args args) {
             return 0;
         }
 
-        ThreadRunFlag = false;
+        
 
     }
 
@@ -341,15 +343,19 @@ int Initialize(string host, int port) {
 }
 
 int Timer(Timer_args args) {
+    std::chrono::milliseconds timespan(args.Time);
+
+    std::this_thread::sleep_for(timespan);
 
     while (ThreadRunFlag != 0) {
+
+        cout << "timeout resending" << endl;
+        SendWithoutChecking(args.message);
+
 
         std::chrono::milliseconds timespan(args.Time);
 
         std::this_thread::sleep_for(timespan);
-
-        cout << "timeout resending" << endl;
-        SendWithoutChecking(args.message);
     }
 
     return 0;
