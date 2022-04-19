@@ -10,7 +10,7 @@
 
 #else
 
-#include <sys/sockets.h>
+#include <sys/socket.h>
 
 #endif
 
@@ -119,9 +119,6 @@ int BuildSocket(string host, int port) {
     if (bind(RecvSock, (SOCKADDR*)&RecvSockAddr, sizeof(RecvSockAddr))) {
         printf("//  bind failed with error %d\n", WSAGetLastError());
         return 1;
-    } else if (bind(SendSock, (SOCKADDR*)&SendSockAddr, sizeof(SendSockAddr))) {
-        printf("//  bind failed with error %d\n", WSAGetLastError());
-        return 1;
     }
 
     printf("//  Socket succesfully build\n");
@@ -167,7 +164,7 @@ int ReciveFunc() {
 
 //SEND given string 
 int SendFunc(std::string x) {
-
+    cout<<"sending "<<x<<endl;
 
 
     for (int i = 0; i < x.length(); i++) {
@@ -246,7 +243,7 @@ void SendWithoutChecking(Send_args args) {
 
     for (int i = 0; i < 1000; i++) {
 
-
+        cout<<args.Batched[i]<<endl;
         if (args.Batched[i] == "") {
             break;
         }
@@ -263,14 +260,16 @@ void SendWithoutChecking(Send_args args) {
 }
 
 //Recive Recives messages and makes sure taht every message is delivered
-int ReciveSendingSide(Send_args args) {
+void *ReciveSendingSide(void *input) {
+
+    struct Send_args* args = ((struct Send_args*)input);
 
     int NumElem;
     int Failed;
 
 
     for (int i = 0; i < 1000; i++) {
-        if (args.Batched[i] == "") {
+        if (args->Batched[i] == "") {
             NumElem = i;
             break;
         }
@@ -289,7 +288,7 @@ int ReciveSendingSide(Send_args args) {
         Failed = 0;
         ID = ReciveFunc();
 
-
+        
 
         Recived.Batched[ID] = "0";
 
@@ -302,15 +301,15 @@ int ReciveSendingSide(Send_args args) {
 
                 Failed++;
 
-                SendFunc(args.Batched[i]);
+                SendFunc(args->Batched[i]);
             }
         }
 
         if (Failed == 0 & LastID) {
             
             cout << "END" << endl;
-
-            return 0;
+            break;
+            //return 0;
         }
 
         
@@ -318,7 +317,7 @@ int ReciveSendingSide(Send_args args) {
     }
 
 
-    return 1;
+    //return 1;
 }
 
 
@@ -340,6 +339,9 @@ int Initialize(string host, int port) {
 
 }
 
+
+
+
 int Send(string msg, string host, int port, int timeout) {
 
     cout << "//Starting Winsock Initialize and Socket Build" << endl;
@@ -349,6 +351,7 @@ int Send(string msg, string host, int port, int timeout) {
     Send_args Batched = IntoBatches(msg);
 
     struct Send_args args;
+    struct Send_args *Allen = (struct Send_args *)malloc(sizeof(struct Send_args));
 
     for (int i = 0; i < 1000; i++) {
 
@@ -356,6 +359,7 @@ int Send(string msg, string host, int port, int timeout) {
             break;
         }
         args.Batched[i] = Batched.Batched[i];
+        Allen->Batched[i] = Batched.Batched[i];
     }
 
 
@@ -363,11 +367,15 @@ int Send(string msg, string host, int port, int timeout) {
     data.message = args;
     data.Time = 1000;
 
-    pthreads SendThread, ReciveThread;
-
+    pthread_t SendThread, ReciveThread;
 
     SendWithoutChecking(args);
-    ReciveSendingSide(args);
+    cout<<"sended"<<endl;
+
+    pthread_create(&ReciveThread, NULL, ReciveSendingSide, (void *)Allen);
+    pthread_join(ReciveThread, NULL);
+
+    
 
 
 
