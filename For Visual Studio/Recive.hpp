@@ -426,6 +426,9 @@ private:
     // Functions to recive data from client 
 
     void is_message_valid(int recived) {
+        ///
+        ///     check if recived message is correct
+        ///
         if (recived == SOCKET_ERROR) {
             printf("// recvfrom failed with error %d\n", WSAGetLastError());
             abort();
@@ -433,6 +436,10 @@ private:
     }
 
     string single_packet_recive() {
+        ///
+        ///     Recives single datapack 
+        ///
+
         char RecvBufferedMsg[BUFF];
 
         int ServerAddrSize = sizeof(RecvSockAddr);
@@ -466,6 +473,9 @@ private:
     //Functions to Send
 
     bool is_socket_error(int result) {
+        ///
+        ///     check if there is no error while sending
+        ///
         if (result == SOCKET_ERROR) {
             printf("// while sending got an error: %d\n", WSAGetLastError());
             return 1;
@@ -475,7 +485,9 @@ private:
     }
 
     int send_single_packet(std::string x) {
-
+        ///
+        ///     send string x to the sender
+        ///
 
 
         for (int i = 0; i < x.length(); i++) {
