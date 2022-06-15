@@ -37,21 +37,6 @@ using namespace std::chrono;
 #define BUFF 10
 #define BUFFID 3
 
-
-
-struct Send_args {
-    string Batched[1000];
-
-};
-
-struct Timer_args {
-    Send_args message;
-    int Time;
-
-};
-
-
-
 atomic<bool> ThreadRunFlag(false);
 char SendMsgBuffered[BUFF + BUFFID];
 
