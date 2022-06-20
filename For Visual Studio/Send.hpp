@@ -33,37 +33,22 @@
 using namespace std;
 using namespace std::chrono;
 
-// Zmienne globalne
+// global variables
 #define BUFF 10
 #define BUFFID 3
+
 
 atomic<bool> ThreadRunFlag(false);
 char SendMsgBuffered[BUFF + BUFFID];
 
-class SendConnection {
+class Sockets {
     private:
-        SOCKET SendSock = INVALID_SOCKET;
-        SOCKET RecvSock = INVALID_SOCKET;
 
-        struct sockaddr_in SendSockAddr;
-        struct sockaddr_in RecvSockAddr;
-        
-
-
-
-        int port;
-        int timeout;
-        int NumberOfPackets;
 
         string host;
-        string Message[1000];
-        
-        bool RecivedPackets[1000] = { 0 };
+        int port;
 
-        //SOCKET INITLIALIZATION 
-
-        //initilazaing winsock
-        int InitializeWinSock() {
+        int initialize_WinSock() {
 
             WSADATA wsaData;
             int res = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -89,11 +74,15 @@ class SendConnection {
             printf("//  Sockets initialization failed %d\n", WSAGetLastError());
             return 1;
         }
-        int InitializeSocket() {
 
-
+        void init_sockets() {
             SendSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
             RecvSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        }
+
+        int initialize_socket() {
+
+            init_sockets();
 
             return check_if_socket_valid();
 
@@ -126,8 +115,9 @@ class SendConnection {
             printf("//  Socket succesfully binded\n");
             return 0;
         }
+
         //build sockets
-        int BuildSocket() {
+        int build_socket() {
 
             adress_sockets();
             convert_sockets_to_bin();
@@ -135,7 +125,32 @@ class SendConnection {
 
         }
 
-        int CloseSocket() {
+
+
+    public:
+        SOCKET SendSock = INVALID_SOCKET;
+        SOCKET RecvSock = INVALID_SOCKET;
+
+        struct sockaddr_in SendSockAddr;
+        struct sockaddr_in RecvSockAddr;
+
+        void initalize(int userport, string userhost) {
+            port = userport;
+            host = userhost;
+
+            if (WIN) {
+                initialize_WinSock();
+            }
+
+
+            if (initialize_socket() || build_socket()) {
+                printf("aborting process due to above error");
+                abort();
+            }
+
+        }
+
+        int close_socket() {
 
             closesocket(SendSock);
             closesocket(RecvSock);
@@ -143,71 +158,76 @@ class SendConnection {
             return 1;
         }
 
-        int Initialize() {
-
-            if (WIN) {
-                InitializeWinSock();
-            }
+};
 
 
-            if (InitializeSocket() || BuildSocket()){
-                printf("aborting process due to above error");
-                return 1;
-            }
 
+class SendConnection {
+    private: 
 
-            return 0;
-        }
+        int timeout;            // time after program should resend message
+        int NumberOfPackets;    // Number of sended messages
 
+        string Message[1000];   
+
+        Sockets ServerSockets;
+        
+        bool RecivedPackets[1000] = { 0 };
 
         // Functions to recive data from client 
         int convert_to_int(string msg) {
-            /// 
-            ///     return id of the packet x
-            ///
+            //
+            // converts id to int
+            // 
             int x;
-            if (msg == "000") {
-                x = 0;
-            }
-            else {
-                std::stringstream str(msg);
-                str >> x;
-            }
 
+            std::stringstream str(msg);
+            str >> x;
+            
             return x;
         }
 
         void is_message_valid(int recived) {
-            ///
-            ///     checks if there is no error in recived packet
-            ///
+            //
+            //  ckecks if message is valid
+            //
             if (recived == SOCKET_ERROR) {
                 printf("// recvfrom failed with error %d\n", WSAGetLastError());
-                abort();
+                
             }
         }
 
-        int single_packet_recive() {
-            ///
-            ///     recive single packet 
-            ///
-            ///     returns: if of the packet
+        tuple<string, int> recive_single_packet() {
+            //
+            //  recives single packet
+            //
             char RecvBufferedMsg[BUFFID];
 
-            int ServerAddrSize = sizeof(RecvSockAddr);
+            int ServerAddrSize = sizeof(ServerSockets.RecvSockAddr);
 
-            int recived = recvfrom(RecvSock, RecvBufferedMsg, BUFFID, 0, (SOCKADDR*)&RecvSockAddr, &ServerAddrSize);
+            int recived = recvfrom(ServerSockets.RecvSock, RecvBufferedMsg, BUFFID, 0, (SOCKADDR*)&ServerSockets.RecvSockAddr, &ServerAddrSize);
 
+            return { RecvBufferedMsg, recived };
+        }
+
+        int get_id_packet() {
+            //
+            //  get id of the packet
+            //
+            string data_pack;
+            int recived;
+
+            tie(data_pack, recived) = recive_single_packet();
             is_message_valid(recived);
 
-            return convert_to_int(RecvBufferedMsg);
+            return convert_to_int(data_pack);
+
         }
 
         int find_and_resend_missing_packets(int ID) {
-            ///
-            ///     resends packet if needed
-            ///
-            /// ID : current packet id
+            //
+            //  finds missing packets and resend them
+            //
             int Failed = 0;
             for (int i = 0; i < ID + 1; i++) {
                 if (!RecivedPackets[i]) {
@@ -217,14 +237,15 @@ class SendConnection {
                     send_single_packet(Message[i]);
                 }
             }
+
             return Failed;
         }
 
         bool is_last_id(int ID) {
-            ///
-            ///     checks if  ID is the id of the last packet
-            ///
-            /// ID : int to check
+            //
+            //  checks if the packet is the last one
+            //
+
             if (ID + 1 == NumberOfPackets) {
                 return true;
             }
@@ -232,9 +253,9 @@ class SendConnection {
         }
 
         void ReciveSendingSide() {
-            ///
-            ///     Recives packets ids from client resend if needed
-            ///
+            //
+            //  checks if everything was recived
+            //
 
             int ID;
 
@@ -244,7 +265,7 @@ class SendConnection {
 
             while (1 == 1) {
 
-                ID = single_packet_recive();
+                ID = get_id_packet();
 
                 RecivedPackets[ID] = true;
 
@@ -260,9 +281,9 @@ class SendConnection {
         //Functions to Send
 
         bool is_socket_error(int result) {
-            ///
-            ///     checks if error occured while sending packet
-            ///
+            //
+            //  check if there is a socket error
+            //
             if (result == SOCKET_ERROR) {
                 printf("// while sending got an error: %d\n", WSAGetLastError());
                 return 1;
@@ -272,23 +293,23 @@ class SendConnection {
         }
         
         int send_single_packet(std::string x) {
-            ///
-            ///     sends message x to the client
-            ///
+            //
+            //  sends a single packet to the client
+            //
 
             for (int i = 0; i < x.length(); i++) {
                 SendMsgBuffered[i] = x[i];
             }
 
-            int result = sendto(SendSock, SendMsgBuffered, x.length(), 0, (SOCKADDR*)&SendSockAddr, sizeof(SendSockAddr));
+            int result = sendto(ServerSockets.SendSock, SendMsgBuffered, x.length(), 0, (SOCKADDR*)&ServerSockets.SendSockAddr, sizeof(ServerSockets.SendSockAddr));
 
             return is_socket_error(result);
         }
 
         void SendWithoutChecking() {
-            ///
-            ///     Sends all of the packets
-            ///
+            //
+            //  sends message to the client
+            //
 
             printf("////    Send Thread succesfully started\n");
 
@@ -296,9 +317,10 @@ class SendConnection {
             for (int i = 0; i < NumberOfPackets; i++) {
 
                 send_single_packet(Message[i]);
+                
 
             }
-
+            
             cout << "////     Ended Sending Thread" << endl;
 
 
@@ -309,17 +331,20 @@ class SendConnection {
         //timer functions
 
         void wait() {
-            ///
-            /// wait timeout (miliseconds)
-            ///
+            //
+            //  waits untill timeout passes
+            //
+
             std::chrono::milliseconds timespan(timeout);
 
             std::this_thread::sleep_for(timespan);
         }
+
         void Timer() {
-            ///
-            ///     Resends message after timeout 
-            ///
+            //
+            //  Sends message again after timeout
+            //
+
             wait();
             while (ThreadRunFlag == false) {
                 cout << "timeout resending" << endl;
@@ -331,10 +356,9 @@ class SendConnection {
         }
 
         tuple<int, int> increase_buff(int msgsize) {
-            ///
-            ///     adjust BUFFER size to messagesize
-            ///
-            /// msgsize: size of message to send
+            //
+            //  if needed increases size of the packet
+            //
 
             int LocalBUFF = BUFF;
             int length = ceil((msgsize) * 1.0 / (LocalBUFF - 4));
@@ -350,9 +374,9 @@ class SendConnection {
         }
 
         string id_creation(int id) {
-            ///
-            ///     convert int x to form 00x
-            ///
+            //
+            //  create id in format 001
+            //
 
             stringstream ss;
 
@@ -361,21 +385,21 @@ class SendConnection {
         }
 
         void IntoBatches(string message) {
-
-            ///
-            ///     convert string to packets stored in Message[]
-            ///
-            ///     msg: string with data to process
+            //
+            //  Converts string inton list of smalller strings (packets)
+            //
+            
+            string part;
 
             int LocalBUFF, length;
             
             tie( LocalBUFF, length ) = increase_buff(message.size());
 
-            NumberOfPackets = length; //remember number of packets
+            NumberOfPackets = length;
 
             for (int i = 0; i < length; i++) {
 
-                string s = id_creation(i); // convert int x to form 00x
+                string s = id_creation(i);
 
                 if (message.size() >= (LocalBUFF - 4)) {
 
@@ -385,7 +409,7 @@ class SendConnection {
 
                 }
                 else {
-                    //if last
+
                     Message[i] = s + message;
 
                 }
@@ -395,16 +419,14 @@ class SendConnection {
 
 
         void runthreads() {
-            ///
-            ///   run threads for checikng if delivered and start timer
-            ///
-            
+            //
+            //  Runs Recive and timeout simultaneously
+            //
+
             vector<std::thread> threads;
+            threads.push_back(std::thread(&SendConnection::ReciveSendingSide, this));
+            threads.push_back(std::thread(&SendConnection::Timer, this));
 
-            threads.push_back(std::thread(&SendConnection::ReciveSendingSide, this)); // thread for checking if delivered
-            threads.push_back(std::thread(&SendConnection::Timer, this));             // timer thread
-
-            //run threads
             for (auto& thread : threads) {
                 thread.join();
             }
@@ -412,34 +434,43 @@ class SendConnection {
 
     public:
         SendConnection(string userhost, int userport, int usertimeout=1) {
-            host = userhost;
-            port = userport;
+            //
+            //  Initiliazing class of SendConnection
+            //
+            //  userhost:    host of the client as string
+            //  userport:    port of the client as int
+            //  usertimeout: time aftre program resend message
             timeout = usertimeout;
-            Initialize(); //initialize sockets
+
+            ServerSockets.initalize(userport, userhost);
 
         }
 
 
 
         void Send(string message) {
+            //
+            //  send message to the client
+            //
 
-            IntoBatches(message);  // convert message int o packets
-            SendWithoutChecking(); // send packets
-            runthreads();          // (in threads) check if data delivered and run timeout
-            CloseSocket();         // close sockets
+            IntoBatches(message);
+            SendWithoutChecking();
+            runthreads();
+            
+            ServerSockets.close_socket();
         }
 
 };
 
 
 int Send(string msg, string host, int port, int timeout) {
-    /// 
-    ///     Function to send data to client
-    /// 
-    /// msg     : string to send</param>
-    /// host    : string describing host to listen ex. "127.0.01"</param>
-    /// port    : int describing port to listen</param>
-    /// timeout : time in ms after program should resend data</param>
+    // 
+    //     Function to send data to client
+    // 
+    // msg:     string to send
+    // host:    string describing host to listen ex. "127.0.01"
+    // port:    int describing port to listen
+    // timeout: time in ms after program should resend data
    
     cout << "//Starting Winsock Initialize and Socket Build" << endl;
     SendConnection sendconnection = SendConnection(host, port, timeout);
