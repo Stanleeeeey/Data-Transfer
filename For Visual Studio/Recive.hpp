@@ -39,31 +39,12 @@ using namespace std::chrono;
 #define BUFFID 3
 
 char SendMsgBuffered[BUFFID];
-char RecvBufferedMsg[BUFF];
+char RecvBufferedMsg[BUFF+BUFFID];
 
-class reciveconnection {
+class ReciveSockets {
 private:
-    SOCKET SendSock = INVALID_SOCKET;
-    SOCKET RecvSock = INVALID_SOCKET;
 
-    struct sockaddr_in SendSockAddr;
-    struct sockaddr_in RecvSockAddr;
 
-    int port;
-    int timeout;
-    int NumberOfPackets;
-
-    string host;
-
-    struct Message {
-        string value[1000];
-    };
-
-    bool RecivedPackets[1000] = { 0 };
-
-    //SOCKET INITLIALIZATION 
-
-    //initilazaing winsock
     int InitializeWinSock() {
 
         WSADATA wsaData;
@@ -100,16 +81,16 @@ private:
 
     }
 
-    void adress_sockets() {
+    void adress_sockets(int port, string host) {
         SendSockAddr.sin_family = AF_INET;
-        SendSockAddr.sin_port = htons(port+1);
+        SendSockAddr.sin_port = htons(port + 1);
 
         RecvSockAddr.sin_family = AF_INET;
         RecvSockAddr.sin_port = htons(port);
 
     }
 
-    void convert_sockets_to_bin() {
+    void convert_sockets_to_bin(int port, string host) {
 
         wstring stemp = std::wstring(host.begin(), host.end());
         LPCWSTR sw = stemp.c_str();
@@ -128,15 +109,21 @@ private:
         return 0;
     }
     //build sockets
-    int BuildSocket() {
+    int BuildSocket(int port, string host) {
 
-        adress_sockets();
-        convert_sockets_to_bin();
+        adress_sockets(port,  host);
+        convert_sockets_to_bin(port, host);
         return attempt_biniding_recive_sock();
 
     }
 
-    int CloseSocket() {
+public:
+    SOCKET SendSock = INVALID_SOCKET;
+    SOCKET RecvSock = INVALID_SOCKET;
+
+    struct sockaddr_in SendSockAddr;
+    struct sockaddr_in RecvSockAddr;
+    int close_socket() {
 
         closesocket(SendSock);
         closesocket(RecvSock);
@@ -144,14 +131,16 @@ private:
         return 1;
     }
 
-    int Initialize() {
+    int initalize(int port, string host) {
+
+
 
         if (WIN) {
             InitializeWinSock();
         }
 
 
-        if (InitializeSocket() || BuildSocket()) {
+        if (InitializeSocket() || BuildSocket(port, host)) {
             printf("aborting process due to above error");
             return 1;
         }
@@ -160,13 +149,20 @@ private:
         return 0;
     }
 
+};
+
+class reciveconnection {
+private:
+
+    ReciveSockets ClientSockets;
+    
 
     // Functions to recive data from client 
 
     void is_message_valid(int recived) {
-        ///
-        ///     check if recived message is correct
-        ///
+        //
+        //  checks if message valid
+        //
         if (recived == SOCKET_ERROR) {
             printf("// recvfrom failed with error %d\n", WSAGetLastError());
             abort();
@@ -174,16 +170,16 @@ private:
     }
 
     string single_packet_recive() {
-        ///
-        ///     Recives single datapack 
-        ///
+        //
+        //  Recives single packet 
+        //
 
         char RecvBufferedMsg[BUFF];
 
-        int ServerAddrSize = sizeof(RecvSockAddr);
+        int ServerAddrSize = sizeof(ClientSockets.RecvSockAddr);
 
 
-        int recived = recvfrom(RecvSock, RecvBufferedMsg, 1024, 0, (SOCKADDR*)&RecvSockAddr, &ServerAddrSize);
+        int recived = recvfrom(ClientSockets.RecvSock, RecvBufferedMsg, 1024, 0, (SOCKADDR*)&ClientSockets.RecvSockAddr, &ServerAddrSize);
 
         if (recived == SOCKET_ERROR) {
             printf("// recvfrom failed with error %d\n", WSAGetLastError());
@@ -211,9 +207,10 @@ private:
     //Functions to Send
 
     bool is_socket_error(int result) {
-        ///
-        ///     check if there is no error while sending
-        ///
+        //
+        //  checks if there is a socket error
+        //
+
         if (result == SOCKET_ERROR) {
             printf("// while sending got an error: %d\n", WSAGetLastError());
             return 1;
@@ -223,21 +220,22 @@ private:
     }
 
     int send_single_packet(std::string x) {
-        ///
-        ///     send string x to the sender
-        ///
+        //
+        //  Sends single string to the sender
+        //
+        // x: string to send
 
 
         for (int i = 0; i < x.length(); i++) {
             SendMsgBuffered[i] = x[i];
         }
 
-        int result = sendto(SendSock, SendMsgBuffered, x.length(), 0, (SOCKADDR*)&SendSockAddr, sizeof(SendSockAddr));
+        int result = sendto(ClientSockets.SendSock, SendMsgBuffered, x.length(), 0, (SOCKADDR*)&ClientSockets.SendSockAddr, sizeof(ClientSockets.SendSockAddr));
 
         return is_socket_error(result);
     }
 
-
+ 
 
     string recive_and_resend() {
         /// 
@@ -248,7 +246,7 @@ private:
         int Recived = 0;
         string msg;
 
-        int FinMessage[10000] = {0};
+        int FinMessage[1000] = {0};
 
 
         int ID;
@@ -305,21 +303,22 @@ private:
 
 
 public:
-    reciveconnection(string userhost, int userport, int usertimeout = 1) {
-        host = userhost;
-        port = userport;
-        timeout = usertimeout;
-        Initialize();
+    reciveconnection(string userhost, int userport) {
+
+        ClientSockets.initalize(userport, userhost); //initialize socket
 
     }
 
 
 
     string Recive() {
+        //
+        //  Recives data from Sender
+        //
         
         string ans = recive_and_resend();
 
-        CloseSocket();
+        ClientSockets.close_socket();
 
         return ans;
     }
