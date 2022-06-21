@@ -253,7 +253,7 @@ private:
         int LastID = -2;
         int size = 0;
 
-        string ans = "";
+        string ans[1000] = { "" };
 
         while (1 == 1) {
             Recived = 0;
@@ -262,12 +262,12 @@ private:
 
             if (msg.substr(1, 3) == "000") {
                 ID = 0;
-                ans += msg.substr(3, msg.size());
+                ans[ID] =  msg.substr(3, msg.size());
             }
             else {
                 std::stringstream str(msg.substr(0, 3));
                 str >> ID;
-                ans += msg.substr(3, msg.size());
+                ans[ID] = msg.substr(3, msg.size());
 
             }
 
@@ -295,8 +295,11 @@ private:
 
 
         }
-
-        return ans;
+        string finalans = "";
+        for (int i = 0; i < LastID + 1; i++) {
+            finalans += ans[i];
+        }
+        return finalans;
 
     }
 
