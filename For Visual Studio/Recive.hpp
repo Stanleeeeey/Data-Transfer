@@ -155,6 +155,7 @@ class reciveconnection {
 private:
 
     ReciveSockets ClientSockets;
+
     
 
     // Functions to recive data from client 
