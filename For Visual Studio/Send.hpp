@@ -270,7 +270,7 @@ class SendConnection {
 
                 RecivedPackets[ID] = true;
 
-                if (find_and_resend_missing_packets(ID)==0 and is_last_id(ID)) {
+                if (find_and_resend_missing_packets(ID)==0 && is_last_id(ID)) {
                     ThreadRunFlag = true;
                     cout << "END" << endl;
 
@@ -359,7 +359,7 @@ class SendConnection {
             int LocalBUFF = BUFF;
             int length = (int)ceil((msgsize) * 1.0 / (LocalBUFF - 4));
 
-            while (length > 999 or length % LocalBUFF == 0) {
+            while (length > 999 || length % LocalBUFF == 0) {
                 cout << "Increasing Buff Size ACTUAL BUFF SIZE:" << LocalBUFF + 1 << endl;
 
                 LocalBUFF++;
