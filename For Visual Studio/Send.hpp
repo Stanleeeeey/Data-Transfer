@@ -41,12 +41,12 @@ using namespace std::chrono;
 atomic<bool> ThreadRunFlag(false);
 char SendMsgBuffered[BUFF + BUFFID];
 
-class Sockets {
+class SendSockets {
     private:
 
 
-        string host;
-        int port;
+        string host = "";
+        int port    = NULL;
 
         int initialize_WinSock() {
 
@@ -131,10 +131,10 @@ class Sockets {
         SOCKET SendSock = INVALID_SOCKET;
         SOCKET RecvSock = INVALID_SOCKET;
 
-        struct sockaddr_in SendSockAddr;
-        struct sockaddr_in RecvSockAddr;
+        struct sockaddr_in SendSockAddr = { 0 };
+        struct sockaddr_in RecvSockAddr = { 0 };
 
-        void initalize(int userport, string userhost) {
+        bool initalize(int userport, string userhost) {
             port = userport;
             host = userhost;
 
@@ -145,8 +145,9 @@ class Sockets {
 
             if (initialize_socket() || build_socket()) {
                 printf("aborting process due to above error");
-                abort();
+                return false;
             }
+            return true;
 
         }
 
@@ -170,7 +171,7 @@ class SendConnection {
 
         string Message[1000];   
 
-        Sockets ServerSockets;
+        SendSockets *ServerSockets = new SendSockets();
         
         bool RecivedPackets[1000] = { 0 };
 
@@ -203,9 +204,9 @@ class SendConnection {
             //
             char RecvBufferedMsg[BUFFID];
 
-            int ServerAddrSize = sizeof(ServerSockets.RecvSockAddr);
+            int ServerAddrSize = sizeof(ServerSockets->RecvSockAddr);
 
-            int recived = recvfrom(ServerSockets.RecvSock, RecvBufferedMsg, BUFFID, 0, (SOCKADDR*)&ServerSockets.RecvSockAddr, &ServerAddrSize);
+            int recived = recvfrom(ServerSockets->RecvSock, RecvBufferedMsg, BUFFID, 0, (SOCKADDR*)&ServerSockets->RecvSockAddr, &ServerAddrSize);
 
             return { RecvBufferedMsg, recived };
         }
@@ -228,6 +229,7 @@ class SendConnection {
             //
             //  finds missing packets and resend them
             //
+
             int Failed = 0;
             for (int i = 0; i < ID + 1; i++) {
                 if (!RecivedPackets[i]) {
@@ -245,7 +247,6 @@ class SendConnection {
             //
             //  checks if the packet is the last one
             //
-
             if (ID + 1 == NumberOfPackets) {
                 return true;
             }
@@ -269,7 +270,7 @@ class SendConnection {
 
                 RecivedPackets[ID] = true;
 
-                if (find_and_resend_missing_packets(ID)==0 && is_last_id(ID)) {
+                if (find_and_resend_missing_packets(ID)==0 and is_last_id(ID)) {
                     ThreadRunFlag = true;
                     cout << "END" << endl;
 
@@ -296,12 +297,11 @@ class SendConnection {
             //
             //  sends a single packet to the client
             //
-
             for (int i = 0; i < x.length(); i++) {
                 SendMsgBuffered[i] = x[i];
             }
 
-            int result = sendto(ServerSockets.SendSock, SendMsgBuffered, x.length(), 0, (SOCKADDR*)&ServerSockets.SendSockAddr, sizeof(ServerSockets.SendSockAddr));
+            int result = sendto(ServerSockets->SendSock, SendMsgBuffered, (int)x.length(), 0, (SOCKADDR*)&ServerSockets->SendSockAddr, sizeof(ServerSockets->SendSockAddr));
 
             return is_socket_error(result);
         }
@@ -310,7 +310,6 @@ class SendConnection {
             //
             //  sends message to the client
             //
-
             printf("////    Send Thread succesfully started\n");
 
 
@@ -334,7 +333,6 @@ class SendConnection {
             //
             //  waits untill timeout passes
             //
-
             std::chrono::milliseconds timespan(timeout);
 
             std::this_thread::sleep_for(timespan);
@@ -344,7 +342,6 @@ class SendConnection {
             //
             //  Sends message again after timeout
             //
-
             wait();
             while (ThreadRunFlag == false) {
                 cout << "timeout resending" << endl;
@@ -359,15 +356,14 @@ class SendConnection {
             //
             //  if needed increases size of the packet
             //
-
             int LocalBUFF = BUFF;
-            int length = ceil((msgsize) * 1.0 / (LocalBUFF - 4));
+            int length = (int)ceil((msgsize) * 1.0 / (LocalBUFF - 4));
 
-            while (length > 999 || length % LocalBUFF == 0) {
+            while (length > 999 or length % LocalBUFF == 0) {
                 cout << "Increasing Buff Size ACTUAL BUFF SIZE:" << LocalBUFF + 1 << endl;
 
                 LocalBUFF++;
-                length = ceil((msgsize) * 1.0 / (LocalBUFF - 4));
+                length = (int)ceil((msgsize) * 1.0 / (LocalBUFF - 4));
             }
 
             return { LocalBUFF, length };
@@ -377,7 +373,6 @@ class SendConnection {
             //
             //  create id in format 001
             //
-
             stringstream ss;
 
             ss << setw(3) << setfill('0') << (id) % 1000;
@@ -388,12 +383,15 @@ class SendConnection {
             //
             //  Converts string inton list of smalller strings (packets)
             //
+
+
             
             string part;
 
+            int IdCount = BUFFID;
             int LocalBUFF, length;
             
-            tie( LocalBUFF, length ) = increase_buff(message.size());
+            tie( LocalBUFF, length ) = increase_buff((int)message.length());
 
             NumberOfPackets = length;
 
@@ -401,10 +399,10 @@ class SendConnection {
 
                 string s = id_creation(i);
 
-                if (message.size() >= (LocalBUFF - 4)) {
+                if (message.length() >= (LocalBUFF - 4)) {
 
                     Message[i] = s + message.substr(0, LocalBUFF - 4);
-                    message = message.substr(LocalBUFF - 4, message.size());
+                    message = message.substr(LocalBUFF - 4, message.length());
 
 
                 }
@@ -422,7 +420,6 @@ class SendConnection {
             //
             //  Runs Recive and timeout simultaneously
             //
-
             vector<std::thread> threads;
             threads.push_back(std::thread(&SendConnection::ReciveSendingSide, this));
             threads.push_back(std::thread(&SendConnection::Timer, this));
@@ -440,9 +437,11 @@ class SendConnection {
             //  userhost:    host of the client as string
             //  userport:    port of the client as int
             //  usertimeout: time aftre program resend message
+
             timeout = usertimeout;
 
-            ServerSockets.initalize(userport, userhost);
+            ServerSockets->initalize(userport, userhost);
+
 
         }
 
@@ -452,12 +451,11 @@ class SendConnection {
             //
             //  send message to the client
             //
-
             IntoBatches(message);
             SendWithoutChecking();
             runthreads();
             
-            ServerSockets.close_socket();
+            ServerSockets->close_socket();
         }
 
 };
@@ -473,12 +471,9 @@ int Send(string msg, string host, int port, int timeout) {
     // timeout: time in ms after program should resend data
    
     cout << "//Starting Winsock Initialize and Socket Build" << endl;
-    SendConnection sendconnection = SendConnection(host, port, timeout);
+    SendConnection *sendconnection = new SendConnection(host, port, timeout);
 
-    sendconnection.Send(msg);
-
-
-
+    sendconnection->Send(msg);
 
     return 0;
 
