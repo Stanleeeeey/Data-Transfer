@@ -273,6 +273,7 @@ class SendConnection {
                 if (find_and_resend_missing_packets(ID)==0 && is_last_id(ID)) {
                     ThreadRunFlag = true;
                     cout << "END" << endl;
+                    break;
 
                 }
             }
