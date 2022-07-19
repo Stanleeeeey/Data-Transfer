@@ -452,6 +452,7 @@ class SendConnection {
             //
             //  send message to the client
             //
+            ThreadRunFlag = false;
             IntoBatches(message);
             SendWithoutChecking();
             runthreads();
