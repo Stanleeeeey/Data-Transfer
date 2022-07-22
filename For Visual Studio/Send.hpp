@@ -346,7 +346,7 @@ class SendConnection {
             wait();
             while (ThreadRunFlag == false) {
                 cout << "timeout resending" << endl;
-                SendWithoutChecking();
+                find_and_resend_missing_packets(NumberOfPackets-1);
                 wait();
             }
 
