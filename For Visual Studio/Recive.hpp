@@ -90,7 +90,7 @@ private:
 
     }
 
-    void convert_sockets_to_bin(int port, string host) {
+    void convert_to_ip6(int port, string host) {
 
         wstring stemp = std::wstring(host.begin(), host.end());
         LPCWSTR sw = stemp.c_str();
@@ -112,7 +112,7 @@ private:
     int BuildSocket(int port, string host) {
 
         adress_sockets(port,  host);
-        convert_sockets_to_bin(port, host);
+        convert_to_ip6(port, host);
         return attempt_biniding_recive_sock();
 
     }
@@ -281,15 +281,8 @@ private:
                 cout << "LAST ID RECIVED\n";
             }
 
-            if (LastID != -1) {
-                for (int i = 0; i <= LastID; i++) {
 
-                    if (FinMessage[i])
-                        Recived++;
-                }
-            }
-            
-            if (Recived == LastID + 1) {
+            if (count(FinMessage, FinMessage + 1000, true) == LastID + 1) {
                 cout << "END" << endl;
                 break;
             }
