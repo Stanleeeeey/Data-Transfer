@@ -90,7 +90,7 @@ private:
 
     }
 
-    void convert_to_ip6(int port, string host) {
+    void convert_to_bin(int port, string host) {
 
         wstring stemp = std::wstring(host.begin(), host.end());
         LPCWSTR sw = stemp.c_str();
@@ -112,7 +112,7 @@ private:
     int BuildSocket(int port, string host) {
 
         adress_sockets(port,  host);
-        convert_to_ip6(port, host);
+        convert_to_bin(port, host);
         return attempt_biniding_recive_sock();
 
     }
