@@ -2,6 +2,8 @@
 
 Simple Headerfile library for sending string message using winsock.
 
+**Quick note:** this code need optimization
+
 # HOW TO USE IT
 
 Warning!! the easiest way to work with the library is to use visual studio compiler, gcc still don't support timeout (still requires it as argument)
