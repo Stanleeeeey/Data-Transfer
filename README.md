@@ -49,13 +49,13 @@ Example of use : [here](https://github.com/Stanleeeeey/Data-Transfer/blob/main/E
 1. We get the string x to send to the client.
 2. We split x into packets with id
 3. We send every packet
-4. We recive ids from the reciver
-5. if any ID is missing we resend packet with that id untill we recive this id back
+4. We receive ids from the reciver
+5. if any ID is missing we resend packet with that id untill we receive this id back
 ## RECIVER
-1.  We recive packet with ID
+1.  We receive packet with ID
 2.  Ans[ID] = packet
 3.  We resend ID
-4.  recive new messages while all packets aren't recived
+4.  receive new messages while all packets aren't received
 
 ![image](https://user-images.githubusercontent.com/43855236/174836396-0afddf35-0464-45a3-ac96-afdec996a5b2.png)
 
