@@ -2,7 +2,7 @@
 
 Simple Headerfile library for sending string message using winsock.
 
-**Quick note:** this code need a lot of optimization
+**Quick note:** this code needs a lot of optimization
 
 # HOW TO USE IT
 
